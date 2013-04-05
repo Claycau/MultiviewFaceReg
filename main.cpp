@@ -52,10 +52,10 @@ void main()
 	const int numSample		= 5;
 	const int numRegistor	= 20;
 	const int numBlock		= 5*2;//recognition.h也要改
-	int ini_size			= 180;    	   
+	int ini_size			= 120;    	   
 	int ini_pcaDimension	= 5;  
-	int ini_numSelectBlock	= 3;
-	double ini_threshold	= 0.55; 
+	int ini_numSelectBlock	= 4;
+	double ini_threshold	= 0.1; 
 	bool brak_to_reg		= false;
 	string filename				= "..\\Database\\reg_inf.txt";
 	string clock_txt			= "..\\Database\\time.txt";
@@ -117,7 +117,7 @@ void main()
 
 					clock_t reg = clock();
 					//正臉
-					for(int i = 1;i <= total_testperson*3;i += 3)
+					for(int i = 1;i <= total_testperson*3;i++)
 					{
 						face_reg.StartRecognition(i,false);
 					}
@@ -132,11 +132,7 @@ void main()
 					fp.open(resultfilename,ios::app|ios::out);
 					fp << threshold<<"\t"<< pre <<"\t"<< recall << "\t" << reg << "\n";
 					fp.close();
-					//側臉
-					/*for(int i = 2;i <= total_testperson*3;i += 1)
-					{
-					face_reg.StartRecognition(i);
-					}*/
+
 				}
 			}
 			ini_numSelectBlock	= 2;

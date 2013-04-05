@@ -34,8 +34,8 @@ using namespace cv;
 #define  END_M    TOTALM
 #define  ADDM     BIG_BLOCK_SIZE
 
-#define  Gax				 7
-#define	 Gay				 7
+#define  Gax				 13
+#define	 Gay				 13
 #define  Gradius			 Gay/2	
 /*			DoType			*/
 #define MAG_TYPE			 0

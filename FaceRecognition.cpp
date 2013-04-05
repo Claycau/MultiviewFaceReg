@@ -538,9 +538,9 @@ IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int 
 	//取人臉出來
 	int w = (normal_rotate_coord[7].x - normal_rotate_coord[1].x)/3;
 	ROI.x = normal_rotate_coord[1].x - 1*w;
-	ROI.y = (normal_rotate_coord[0].y);// + normal_rotate_coord[1].y)/2;
-	ROI.width  = w*5;//(middleX-ROI.x)*ratioX;//600
-	ROI.height = normal_rotate_coord[5].y  - normal_rotate_coord[0].y;//(middleY - Coord0Y)*ratioY;//centerCoord[11].y-centerCoord[0].y
+	ROI.y = (normal_rotate_coord[0].y);
+	ROI.width  = w*5;
+	ROI.height = normal_rotate_coord[5].y  - normal_rotate_coord[0].y;
 
 	if(m_FaceInf == PROFILELEFT)
 	{
@@ -598,10 +598,10 @@ void FaceRecognition::save_warp(IplImage* Img,int person)
 	cvZero(dst);
 	Morphining M(4,dst,morphine);
 
-	int sample_index = 0;//sample_index =>sample = 1
+	int sample_index = 0;
 	int database_index = sample_index + person*m_numSample;
 	int index; 
-	for(int j = 0;j < 4;j++)
+	for(int j = 2;j < 4;j++)
 	{
 		for(int i = 0;i < 4;i++)
 		{	
@@ -650,14 +650,36 @@ void FaceRecognition::save_warp(IplImage* Img,int person)
 
 	////-------------Do Affine------------------//
 	////若圖為右側臉，則不做，反之。
-	//
-	Morphining S(3,dst,morphine);
+	
+ 	Morphining S(3,dst,morphine);
 	bool affine_debug = false;
-	for(int i = 0;i < 2;i++)
+	//眼睛
+	for(int j = 0;j < 4;j++)
+	{
+		for(int i = 0 + j;i < 3 + j;i++)
+		{
+			adjusted_aff[i-j]  = normal_coord_t[i];
+			adjust_aff[i-j]    = m_TraningCoord[database_index][i];
+			if(j > 1 && j < 4)
+			{
+				adjusted_aff[i-j]  = normal_coord_t[i + 4];
+				adjust_aff[i-j]    = m_TraningCoord[database_index][i + 4];
+			}
+		}
+		S.DoAffineTrsform(Img,dst,adjust_aff,adjusted_aff,30000000,1,affine_debug);
+	}
+
+	for(int i = 0;i < 3;i++)
 	{
 		adjusted_aff[i]  = normal_coord_t[i];
 		adjust_aff[i]    = m_TraningCoord[database_index][i];
-
+		if(i == 2)
+		{
+			adjusted_aff[i].x  = 0;
+			adjusted_aff[i].y  = 0;
+			adjust_aff[i].x    = 0;
+			adjust_aff[i].y    = 0;
+		}
 	}
 	S.DoAffineTrsform(Img,dst,adjust_aff,adjusted_aff,30000000,1,affine_debug);
 
@@ -713,6 +735,36 @@ void FaceRecognition::save_warp(IplImage* Img,int person)
 		}
 		S.DoAffineTrsform(Img,dst,adjust_aff,adjust_affRight,30000000);
 	}
+	//下巴
+	for(int j = 0;j < 2;j++)
+	{
+		for(int i = 4 + j*6;i < 6 + j*6;i++)
+		{
+			adjusted_aff[i-4 - j*6]  = normal_coord_t[i];
+			adjust_aff[i-4 - j*6]    = m_TraningCoord[database_index][i];
+		}
+		int dot_index_t = 3 + j*6;
+		int dot_index_2 = 4 + j*6;
+		double m_t = (normal_coord_t[dot_index_t].y - normal_coord_t[dot_index_2].y)*1.0 / normal_coord_t[dot_index_t].x - normal_coord_t[dot_index_2].x + 0.5;
+		double b_t = normal_coord_t[dot_index_2].y - m_t * normal_coord_t[dot_index_2].x + 0.5;
+		double m_d = (m_TraningCoord[database_index][dot_index_t].y - m_TraningCoord[database_index][dot_index_2].y)*1.0 / m_TraningCoord[database_index][dot_index_t].x - m_TraningCoord[database_index][dot_index_2].x + 0.5;
+		double b_d = m_TraningCoord[database_index][dot_index_2].y - m_t * m_TraningCoord[database_index][dot_index_2].x + 0.5;
+
+		adjusted_aff[2].y	= normal_coord_t[dot_index_2 + 1].y;
+		adjust_aff[2].y		= m_TraningCoord[database_index][dot_index_2 + 1].y;
+		if(j == 0)
+		{
+			adjusted_aff[2].x = (normal_coord_t[dot_index_2 + 1].y - b_t)/m_t - 4*m_width/60;
+			adjust_aff[2].x	= (m_TraningCoord[database_index][dot_index_2 + 1].y - b_d)/m_d - 4*m_width/60;
+		}
+		else
+		{
+			adjusted_aff[2].x = (normal_coord_t[dot_index_2 + 1].y - b_t)/m_t + 4*m_width/60;
+			adjust_aff[2].x	= (m_TraningCoord[database_index][dot_index_2 + 1].y - b_d)/m_d + 4*m_width/60;
+		}
+		S.DoAffineTrsform(Img,dst,adjust_aff,adjusted_aff,30000000,1,affine_debug);
+	}
+
 	if(m_debug)
 	{
 		cvNamedWindow("small",0);

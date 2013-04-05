@@ -125,7 +125,7 @@ Recognition::~Recognition()
 //Generate ReGabor and ImGabor
 void Recognition::GaborFilter(double theta,double f)
 {
-	double space_freq = (1.5*1.0)/(Gax*1.0) * f;
+	double space_freq = (4.5*1.0)/(Gax*1.0) * f;
 	double sigma = Gax*0.35;
 	
 	for(int j = -Gay/2;j <= Gay/2;j++)
