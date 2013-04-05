@@ -21,7 +21,7 @@ bool read_setting_file(const char *filename,const char *resultfilename,int &ini_
 				   >> buf[3]		>> ini_size	   >> ini_pcaDimension >> ini_threshold	  >> ini_numSelectBlock;
 				   return true;
 			}
-			else if(continued == 'r' || continued == 'r')
+			else if(continued == 'r' || continued == 'R')
 			{
 				int buf[4];
 				fp.seekg(0,ios::beg);
@@ -52,7 +52,7 @@ void main()
 	const int numSample		= 5;
 	const int numRegistor	= 20;
 	const int numBlock		= 5*2;//recognition.h¤]­n§ï
-	int ini_size			= 60;    	   
+	int ini_size			= 180;    	   
 	int ini_pcaDimension	= 5;  
 	int ini_numSelectBlock	= 3;
 	double ini_threshold	= 0.55; 
@@ -95,7 +95,7 @@ void main()
 
 			for(int numSelectBlock = ini_numSelectBlock; numSelectBlock <= 6;numSelectBlock++)//10
 			{
-				cout << "numSelectBlock" << numSelectBlock << endl;
+				cout << "numSelectBlock = " << numSelectBlock << endl;
 				fp.open(resultfilename,ios::app|ios::out);
 				fp <<"numSelectBlock"<< "\t" << "PCA" <<"\t"  << "Size" << endl;
 				fp << numSelectBlock << "\t" << pca   <<"\t"  << size   << "\n\n";

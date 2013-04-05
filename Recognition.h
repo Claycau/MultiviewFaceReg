@@ -102,7 +102,7 @@ class Recognition:public RecognitionMethod
 			int       m_numRegister;//總共人數
 			int		  m_projection ;
 			int		  m_numOfM;
-			int		  Histogram[2][40][TOTALM][4][8];
+			int		  Histogram[2][40][TOTALM][4][4];
 			int		  m_numOfFeature;
 			int		  His_div;
 };

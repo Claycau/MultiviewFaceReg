@@ -84,7 +84,7 @@ Recognition::Recognition(const char* filename,int projection,int numBlock,int nu
 			{
 				for(int K = 0; K < 4; K++)
 				{
-					for(int Bin = 0; Bin < 4; Bin++)
+					for(int Bin = 0; Bin < (256 / His_div); Bin++)
 					{
 						Histogram[Type][Scale][M][K][Bin] = 0;
 					}
@@ -108,9 +108,9 @@ Recognition::Recognition(const char* filename,int projection,int numBlock,int nu
 	//{
 	//	m_StartM = 3;
 	//}
-	/*cvShowImage  ("Image_in_Recognition.h",Image_in);
-	cvNamedWindow("Image_in_Recognition.h",0);
-	cvWaitKey(0);*/
+	//cvNamedWindow("Image_in_Recognition.h",0);
+	//cvShowImage  ("Image_in_Recognition.h",Image_in);
+	//cvWaitKey(0);
 }
 
 Recognition::~Recognition()
@@ -234,17 +234,7 @@ void Recognition::LBP()
 			LBP_Value += (GaborMag[(j+1)*m_width + (i+1)] > MidPoint) ? 128:0;
 
 			cvSetReal2D(ImgLBP,j,i,LBP_Value);
-			//unsigned char code = 0;
-			//code |= (GaborMag[(j-1)*m_width + (i-1)] > MidPoint) << 7;
-			//code |= (GaborMag[(j-1)*m_width + (i)] > MidPoint) << 6;
-			//code |= (GaborMag[(j-1)*m_width + (i+1)] > MidPoint) << 5;
-			//code |= (GaborMag[(j)*m_width + (i-1)] > MidPoint) << 4;
-			//code |= (GaborMag[(j)*m_width + (i+1)] > MidPoint) << 3;
-			//code |= (GaborMag[(j+1)*m_width + (i-1)] > MidPoint) << 2;
-			//code |= (GaborMag[(j+1)*m_width + (i)] > MidPoint) << 1;
-			//code |= (GaborMag[(j+1)*m_width + (i+1)] > MidPoint) << 0;
-			//	
-			//test.at<unsigned char>(j,i) = code;
+
 		}
 	}
 	if(m_debug)
@@ -906,7 +896,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 	
 		if(Result.regRate > threshold)
 		{
-			cout << "result person = " << Result.person <<" rate = "<< Result.regRate<<endl;
+			cout << "result = " << Result.person <<" rate = "<< Result.regRate;
 		}
 		result.person  = Result.person;
 		result.regRate = Result.regRate;
@@ -951,7 +941,8 @@ void Recognition::DeleteBlackBlock(double percentblock)
 
 		double percent_black_block = static_cast<double>( num_black_point) / block_total_point ;
 		double avg			       = static_cast<double> (total)/block_total_point;
-		if(percent_black_block > percentblock || avg < 65)
+		int threshold			   = 65;
+		if(percent_black_block > percentblock || avg < threshold)
 		{
 			m_no_black_block[m] = false;
 		}
@@ -986,12 +977,6 @@ void Recognition::RecordFaseTure(ResultReg Result,double threshold,bool debug)
 			stringstream(s[2]) >> get_result[rows]; 
 		}
 	}
-
-	else
-	{
-		cout << "initial file" << endl;
-	}
-
 	fr.close();
 
 	if(Result.regRate > threshold)
@@ -1037,6 +1022,8 @@ void Recognition::RecordFaseTure(ResultReg Result,double threshold,bool debug)
 	{
 		recall = (get_result[2]*1.0/((get_result[2] + get_result[1])*1.0))*100;
 	}
+
+	cout << " pre = " << pre <<" recall = " << recall << endl;
 
 	if(debug)
 	{

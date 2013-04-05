@@ -148,7 +148,6 @@ void   Morphining::ProjectionTrsform(IplImage *src,IplImage *dst,CvMat *Matrix,b
 			
 				if(x >= 0 && y >= 0 && x < width && y < height)
 				{
-					
 					double pixel = cvGetReal2D(src,y,x);
 					cvSetReal2D(dst,j,i,pixel) ;
 				}
@@ -157,10 +156,10 @@ void   Morphining::ProjectionTrsform(IplImage *src,IplImage *dst,CvMat *Matrix,b
 	}
 
 	cvReleaseImage(&test);
-	if(debug)
+	if(m_debug)
 	{
-		cvNamedWindow("projection",0);
-		cvShowImage("projection",dst);
+		cvNamedWindow("morphine",0);
+		cvShowImage("morphine",dst);
 		cvWaitKey(0);
 	}
 }
@@ -243,12 +242,6 @@ void   Morphining::DoProjection(IplImage *src,IplImage *dst,vector<Coordinate> a
 		Vertex = new Coordinate [m_numFeature];
 		for(int i = 0;i < m_numFeature;i++)Vertex[i] = adjusted[i];
 		ProjectionTrsform(src,dst,Matrix,debug);
-		if(m_debug)
-		{
-			cvNamedWindow("dst",0);
-			cvShowImage("dst",dst);
-			cvWaitKey(0);
-		}
 	/*}*/
 
 	cvReleaseMat(&Matrix);
@@ -366,10 +359,7 @@ CvMat *Morphining::GetAffineMatrix(vector<Coordinate> coord1,vector<Coordinate>c
 void   Morphining::AffineTrsform(IplImage *src,IplImage *dst,CvMat *Matrix,int type,bool debug)
 {
 	int width = src->width,height = src->height;
-	//static int a = 0;
-	//if(a == 4) a = 0;
-	//if(a > 1)
-	//{
+
 	bool in_region = false;
 		for(int j = 0; j < height;j++)
 		{
@@ -396,34 +386,11 @@ void   Morphining::AffineTrsform(IplImage *src,IplImage *dst,CvMat *Matrix,int t
 				}
 			}
 		}
-	/*}*/
-	//else
-	//{
-		//if(a == 1) Vertex[0].x = dst->width;
 
-		//for(int j = 0; j < height;j++)
-		//{
-		//	for(int i = 0 ; i < width;i++)
-		//	{
-		//		if(Point_in_Polygon(Vertex,i,j,m_numFeature))
-		//		{
-		//			int x  = i*cvGetReal2D(Matrix,0,0) + j*cvGetReal2D(Matrix,0,1) + cvGetReal2D(Matrix,0,2)*1.0 + 0.5;
-		//			int y  = i*cvGetReal2D(Matrix,1,0) + j*cvGetReal2D(Matrix,1,1) + cvGetReal2D(Matrix,1,2)*1.0 + 0.5;
-		//			
-		//			if(x >= 0 && y >= 0 && x < width && y < height)
-		//			{
-		//				double pixel = cvGetReal2D(src,y,x);
-		//				cvSetReal2D(dst,j,i,pixel) ;
-		//			}
-		//		}
-		//	}
-		//}
-	//}
-	//a++;
-	if(debug)
+	if(m_debug)
 	{
-		cvNamedWindow("affine",0);
-		cvShowImage("affine",dst);
+		cvNamedWindow("morphine",0);
+		cvShowImage("morphine",dst);
 		cvWaitKey(0);
 	}
 }
