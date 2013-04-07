@@ -145,10 +145,6 @@ void FaceRecognition::InitSetting(const char* filename,bool debug)
 bool FaceRecognition::InitRegister()
 {
 	FILE *fdle = NULL;
-	fdle = fopen("..\\Database\\Coordinate.xls","w");
-	fclose(fdle);
-	fdle = NULL;
-
 	fdle = fopen("..\\Database\\ConcatenatingHisMAG_total.xls","w");
 	fclose(fdle);
 	fdle = NULL;
@@ -172,6 +168,9 @@ bool FaceRecognition::InitRegister()
 	fdle = fopen("..\\DataBase\\NormalCoord.xls","w");
 	fclose(fdle);
 	fdle = NULL;
+
+	m_FaceInf = 1;
+
 	printf("Finish resetting File\n");
 	return true;
 }
@@ -319,7 +318,7 @@ void FaceRecognition::ConstructFeature()
 	}
 }
 
-void FaceRecognition::StartRecognition(int index,bool debug)
+void FaceRecognition::StartRecognition(int index,vector<vector<double>>&pre,vector<vector<double>>&recall,bool debug)
 {
 	int  IndexPicture	= index;
 	int  person         = (IndexPicture-1)/3;
@@ -329,7 +328,7 @@ void FaceRecognition::StartRecognition(int index,bool debug)
 
 	if(InitRecog(IndexPicture))
 	{
-		cout << "\nperson = " << person << " ";
+		cout << "\nperson = " << person << "\n";
 		/*								¥¿³Wµe						*/
 		for(int i = 0;i < 12;i++)
 		{
@@ -340,7 +339,7 @@ void FaceRecognition::StartRecognition(int index,bool debug)
 		IplImage* normal_test = Procrustes(m_TestImage,centerCoord,testMode);
 
 		save_warp(normal_test,person);
-		cvSaveImage("../Database/normal.jpg",normal_test);
+		//cvSaveImage("../Database/normal.jpg",normal_test);
 		cvReleaseImage(&normal_test);
 		NormalizeTestImg(person);
 
@@ -361,9 +360,11 @@ void FaceRecognition::StartRecognition(int index,bool debug)
 		ResultReg resultget;
 		vector<vector<int>>highestM(m_numSample,m_numBlock);
 		recognition.AutoSimilarityBetween(m_numSelectBlock,m_threshold,resultget,highestM);
-		recognition.ShowBlockImg(m_numSelectBlock,resultget,highestM);
-		recognition.RecordFaseTure(resultget,m_threshold,m_debug);
+		recognition.RecordFaseTure(resultget,pre[0],recall[0]);
+		if(IndexPicture % 3 != 1)recognition.RecordFaseTure(resultget,pre[1],recall[1],1);
 
+		/*if(m_debug)*/
+		recognition.ShowBlockImg(m_numSelectBlock,resultget,highestM);
 		cvReleaseImage(&m_TestImage);
 		cvReleaseImage(&m_TestColorImage);
 	}
@@ -599,7 +600,10 @@ void FaceRecognition::save_warp(IplImage* Img,int person)
 	Morphining M(4,dst,morphine);
 
 	int sample_index = 0;
+	
 	int database_index = sample_index + person*m_numSample;
+	if(person > 19)	database_index = 0;
+
 	int index; 
 	for(int j = 2;j < 4;j++)
 	{

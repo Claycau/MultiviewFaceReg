@@ -67,9 +67,10 @@ class Recognition:public RecognitionMethod
 			void ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector<int>> &highestM);
 			void TestingProjecction();
 			void DeleteBlackBlock(double percentblock);
-			void RecordFaseTure(ResultReg Result,double threshold = 0.7,bool debug = false);
+			void RecordFaseTure(ResultReg Result,vector<double>&pre,vector<double>&recall,int type = 0,double str_th = 0.5,double end_th = 0.85,double th_gap = 0.025,bool debug = false);
 			vector<double> ComputeSimilarity();
 			IplImage* GetFeatureImg(int choose);//1.LBP 2.LGXP
+			void iniHist();
 			void AutoSimilarityBetween(int numSelectBlock,double threshold,
 										   ResultReg &result,vector<vector<int>> &highestM);
 	private:

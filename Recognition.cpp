@@ -48,7 +48,7 @@ Recognition::Recognition(const char* filename,int projection,int numBlock,int nu
 	m_debug		  =		debug;
 
 	m_Test_ProjectionSpace     = vector<vector<double>>(2*m_numOfM*m_numSample,m_projection);
-	m_Register_ProjectionSpace = vector<vector<double>>(2*m_numOfM*m_numSample*m_numRegister,m_projection);
+	
 	for(int i = 0;i < TOTALM;i++) m_no_black_block[i] = true;
 	int buf;
 	int length = strlen(filename);
@@ -75,42 +75,6 @@ Recognition::Recognition(const char* filename,int projection,int numBlock,int nu
 			}
 		}
 	}
-	/*Initialize zero for all Histogram value*/
-	for(int Type = 0;Type < 2 ;Type++)
-	{
-		for(int Scale = 0;Scale < 40; Scale++ )
-		{
-			for(int M = 0; M < TOTALM; M++)
-			{
-				for(int K = 0; K < 4; K++)
-				{
-					for(int Bin = 0; Bin < (256 / His_div); Bin++)
-					{
-						Histogram[Type][Scale][M][K][Bin] = 0;
-					}
-				}
-			}
-		}
-	}
-	//m_AddM = BIG_BLOCK_SIZE - 1;//左右臉進來時之設定m_AddM = BIG_BLOCK_SIZE - 1
-	//m_SetM = 0;
-	//if(FaceInf == FRONATAL)
-	//{
-	//	m_StartM = 2;
-	//	m_AddM   = BIG_BLOCK_SIZE;
-	//	m_SetM   =  1;
-	//}
-	//else if(FaceInf == PROFILELEFT)
-	//{
-	//	m_StartM = 0;
-	//}
-	//else
-	//{
-	//	m_StartM = 3;
-	//}
-	//cvNamedWindow("Image_in_Recognition.h",0);
-	//cvShowImage  ("Image_in_Recognition.h",Image_in);
-	//cvWaitKey(0);
 }
 
 Recognition::~Recognition()
@@ -433,7 +397,7 @@ void Recognition::DatabaseConstrcutFeature()
 			PIE[j*m_width+i] = cvGetReal2D(out_image,j,i); 
 		}
 	}	
-
+	iniHist();
 	for(int PhaScale = 0;PhaScale < 360;PhaScale+=45)// 0 ,45 ,90 , 135 , 180, 225 , 270 , 315 
 	{	
 		//printf("PhaScale = %d\n",PhaScale);
@@ -477,7 +441,7 @@ void Recognition::Construct_Test_Date()
 	/***						 產生 Gabor Magnitude & Phase				***/
 
 	int scale = 0;	//同等於計算輸入張數
-
+	iniHist();
 	//printf("Generating Feature.....\n");
 
 	for(int PhaScale = 0;PhaScale < 360;PhaScale+=45)// 0 ,45 ,90 , 135 , 180, 225 , 270 , 315 , 360
@@ -605,6 +569,7 @@ void Recognition::LoadDatabase()
 {
 	/*******							讀取資料庫資料						*******/
 	//printf("Database Loading.....\n");
+	m_Register_ProjectionSpace = vector<vector<double>>(2*m_numOfM*m_numSample*m_numRegister,m_projection);
 	FILE *Register_Projection = fopen("..\\DataBase\\m_ProjectionSpace.xls","r");
 											
 	for(int j = 0 ;j < (m_numSample*m_numOfM*2*m_numRegister);j++)
@@ -780,6 +745,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 	if(numSelectBlock <= END_M)
 	{
 		FILE *Blockprint = fopen("..\\DataBase\\Debug_Similarity_Block.txt","w");
+	
 		int startM = 0,endM = END_M, totalM = 0;
 		double Weight = 0.5;
 		ResultReg Result;
@@ -896,7 +862,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 	
 		if(Result.regRate > threshold)
 		{
-			cout << "result = " << Result.person <<" rate = "<< Result.regRate;
+			cout << "result = " << Result.person <<" rate = "<< Result.regRate << "\n";
 		}
 		result.person  = Result.person;
 		result.regRate = Result.regRate;
@@ -954,10 +920,16 @@ void Recognition::DeleteBlackBlock(double percentblock)
 	cvReleaseImage(&grayImg);
 }
 
-void Recognition::RecordFaseTure(ResultReg Result,double threshold,bool debug)
+void Recognition::RecordFaseTure(ResultReg Result, vector<double>&pre, vector<double>&recall,
+								 int type,double str_th,double end_th,double th_gap,bool debug)
 {
-	string filename = "..\\DataBase\\record_result.txt";
-	string resultfilename = "..\\DataBase\\record_result.xls";
+	string filename =			"..\\DataBase\\t_record_result.txt";
+	string resultfilename =		"..\\DataBase\\m_record_result.xls";
+	if(type == 1)
+	{
+		filename =			"..\\DataBase\\t_pro_record_result.txt";
+		resultfilename =	"..\\DataBase\\m_pro_record_result.xls";
+	}
 	string s[3];
 	fstream fr;
 
@@ -966,85 +938,90 @@ void Recognition::RecordFaseTure(ResultReg Result,double threshold,bool debug)
 	int filesize = fr.tellg();
 	fr.seekg(0,ios::beg);
 
-	vector<int>get_result(4);
+	int total_num_var_th = (end_th - str_th)/th_gap + 0.5 + 1;
+	vector<int>get_result(4*total_num_var_th);
 
 	if(filesize)
 	{
-		fr >> s[0] >> s[1];
-		for(int rows = 0 ;rows < 4;rows++)
+		for(int rows = 0 ;rows < 4*total_num_var_th;rows++)
 		{
+			if(rows % 4 == 0)fr >> s[0];
 			fr >> s[0] >> s[1] >> s[2];
-			stringstream(s[2]) >> get_result[rows]; 
+			stringstream(s[2]) >> get_result[rows];
 		}
+		fr.close();
+		fr.open(filename,ios::out);
 	}
 	fr.close();
 
-	if(Result.regRate > threshold)
+	for(double threshold = str_th,index = 0;threshold < end_th + th_gap;threshold += th_gap,index +=4)
 	{
-		//if test data belongs to database
-		if(m_nameNum  < m_numRegister)
+		if(Result.regRate > threshold)
 		{
-			if(Result.person == m_nameNum)
+			//if test data belongs to database
+			if(m_nameNum  < m_numRegister)
 			{
-				get_result[2]++;//correctly identified
+				if(Result.person == m_nameNum)
+				{
+					get_result[2 + index]++;//correctly identified
+				}
+				else
+				{
+					get_result[0 + index]++;//incorrectly identified
+				}
+			}
+			//else not belong to
+			else
+			{
+				get_result[0 + index]++;
+			}
+		}
+
+		else
+		{
+			if(m_nameNum  < m_numRegister)
+			{
+				get_result[1 + index]++;//incorrectly rejected
 			}
 			else
 			{
-				get_result[0]++;//incorrectly identified
+				get_result[3 + index]++;//correctly rejected
 			}
 		}
-		//else not belong to
-		else
+
+		//double pre = 0.;
+		if((get_result[2 + index] + get_result[0 + index]) != 0)
 		{
-			get_result[0]++;
+			pre[index/4] = (get_result[2 + index]*1.0/((get_result[2 + index] + get_result[0 + index])*1.0))*100;
 		}
-	}
-
-	else
-	{
-		if(m_nameNum  < m_numRegister)
+		//double recall = 0.;
+		if((get_result[2 + index] + get_result[1 + index]) != 0)
 		{
-			get_result[1]++;//incorrectly rejected
+			recall[index/4] = (get_result[2 + index]*1.0/((get_result[2 + index] + get_result[1 + index])*1.0))*100;
 		}
-		else
+
+		cout <<"thrd = " << threshold << "\tpre = " << pre[index/4] <<"\t recall = " << recall[index/4] << endl;
+
+		if(debug)
 		{
-			get_result[3]++;//correctly rejected
+			cout << "fp = "		<< get_result[0]   << "\n";
+			cout << "fn = "		<< get_result[1]   << "\n";
+			cout << "tp = "		<< get_result[2]   << "\n";
+			cout << "tn = "		<< get_result[3]   << "\n";
+			cout << "pre = "	<< pre[index/4]	   << "\n";
+			cout << "recall = "	<< recall[index/4] << "\n";
 		}
-	}
 
-	double pre = 0.;
-	if((get_result[2] + get_result[0]) != 0)
-	{
-		pre = (get_result[2]*1.0/((get_result[2] + get_result[0])*1.0))*100;
+		ofstream fp;
+		fp.open(filename,ios::app);
+		fp <<threshold<< "\n";
+		fp << "fp = " << get_result[0 + index]  << "\t\t\n";
+		fp << "fn = " << get_result[1 + index]  << "\t\t\n";
+		fp << "tp = " << get_result[2 + index]  << "\t\t\n";
+		fp << "tn = " << get_result[3 + index]  << "\t\t\n";
+		fp.close();
 	}
-	double recall = 0.;
-	if((get_result[2] + get_result[1]) != 0)
-	{
-		recall = (get_result[2]*1.0/((get_result[2] + get_result[1])*1.0))*100;
-	}
-
-	cout << " pre = " << pre <<" recall = " << recall << endl;
-
-	if(debug)
-	{
-		cout << "fp = "		<< get_result[0]  << "\n";
-		cout << "fn = "		<< get_result[1]  << "\n";
-		cout << "tp = "		<< get_result[2]  << "\n";
-		cout << "tn = "		<< get_result[3]  << "\n";
-		cout << "pre = "	<< pre			  << "\n";
-		cout << "recall = "	<< recall		  << "\n";
-	}
-
-	ofstream fp;
-	fp.open(filename,ios::out);
-	fp << pre << " " << recall << "\n";
-	fp << "fp = " << get_result[0]  << "\t\t\n";
-	fp << "fn = " << get_result[1]  << "\t\t\n";
-	fp << "tp = " << get_result[2]  << "\t\t\n";
-	fp << "tn = " << get_result[3]  << "\t\t\n";
-	fp << "pre = "	 << pre			<< "\t\t\n";
-	fp << "recall = "<< recall		<< "\t\t\n";
-	fp.close();
+	cout << "==============================================================================\n";
 }
 
 IplImage* Recognition::GetFeatureImg(int choose)
@@ -1053,4 +1030,25 @@ IplImage* Recognition::GetFeatureImg(int choose)
 	return ImgLBP;
 	else
 	return ImgLGXP;
+}
+
+void Recognition::iniHist()
+{
+		/*Initialize zero for all Histogram value*/
+	for(int Type = 0;Type < 2 ;Type++)
+	{
+		for(int Scale = 0;Scale < 40; Scale++ )
+		{
+			for(int M = 0; M < TOTALM; M++)
+			{
+				for(int K = 0; K < 4; K++)
+				{
+					for(int Bin = 0; Bin < (256 / His_div); Bin++)
+					{
+						Histogram[Type][Scale][M][K][Bin] = 0;
+					}
+				}
+			}
+		}
+	}
 }

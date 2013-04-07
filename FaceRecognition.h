@@ -28,7 +28,7 @@ class FaceRecognition
 		FaceRecognition(bool debug = false);
 		void StartRegistration(bool debug = false);
 		void StartRecognition();
-		void StartRecognition(int index,bool debug = false);
+		void StartRecognition(int index,vector<vector<double>>&pre,vector<vector<double>>&recall,bool debug = false);
 		void InitSetting(const char* filename,bool debug = false);
 	private:
 		int GetFaceInf(Coordinate *coord1,Coordinate *coord2);
