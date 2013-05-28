@@ -201,7 +201,7 @@ bool CPCA::ShowMatrixInf(){
 	//}
 
 	if(m_Mean.size() > 0){
-		FILE *fm_Mean = fopen("..\\DataBase\\m_Mean.xls","a");
+		FILE *fm_Mean = fopen("..\\Database\\m_Mean.xls","a");
 		for(int i=0;i < m_NumOfFeature;i++){
 			fprintf(fm_Mean,"%lf\t",m_Mean[i]);
 		}
@@ -230,7 +230,7 @@ bool CPCA::ShowMatrixInf(){
 	}*/
 
 	if(m_EigenSpace.size() > 0){
-		FILE *fm_EigenSpace=fopen("..\\DataBase\\m_EigenSpace.xls","a");
+		FILE *fm_EigenSpace=fopen("..\\Database\\m_EigenSpace.xls","a");
 		for(int x=0;x<m_NumOfFeature;x++){
 			for(int y=0;y<m_NumOfProjectionPlanes;y++){
 				fprintf(fm_EigenSpace,"%lf\t",m_EigenSpace[x][y]);
@@ -243,7 +243,7 @@ bool CPCA::ShowMatrixInf(){
 
 	//每個影像投影的值
 	if(m_ProjectionSpace.size() > 0){
-		FILE *fm_ProjectionSpace=fopen("..\\DataBase\\m_ProjectionSpace.xls","a");
+		FILE *fm_ProjectionSpace=fopen("..\\Database\\m_ProjectionSpace.xls","a");
 		for(int i=0;i<m_NumOfSample;i++){
 			for(int j=0;j<(m_NumOfFeature<m_NumOfProjectionPlanes?m_NumOfFeature:m_NumOfProjectionPlanes);j++){
 				fprintf(fm_ProjectionSpace,"%lf\t",m_ProjectionSpace[i][j]);

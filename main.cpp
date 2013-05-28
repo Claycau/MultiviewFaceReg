@@ -50,10 +50,10 @@ void record_ini(int numRegistor,int numSample,int numBlock ,int size,int pca ,do
 {
 	string filename				= "..\\Database\\reg_inf.txt";
 	string clock_txt			= "..\\Database\\time.txt";
-	string buf_resultfilename	= "..\\DataBase\\t_record_result.txt";
-	string resultfilename		= "..\\DataBase\\m_record_result.xls";
-	string buf_pro_resultfilename	= "..\\DataBase\\t_pro_record_result.txt";
-	string pro_resultfilename		= "..\\DataBase\\m_pro_record_result.xls";
+	string buf_resultfilename	= "..\\Database\\t_record_result.txt";
+	string resultfilename		= "..\\Database\\m_record_result.xls";
+	string buf_pro_resultfilename	= "..\\Database\\t_pro_record_result.txt";
+	string pro_resultfilename		= "..\\Database\\m_pro_record_result.xls";
 
 	fstream fp;
 	fp.open(resultfilename,ios::app|ios::out);
@@ -81,23 +81,23 @@ void record_ini(int numRegistor,int numSample,int numBlock ,int size,int pca ,do
 
 void main()
 {
-	const int total_testperson  = 20;
+	const int total_testperson  = 30;
 	const int numSample		= 5;
 	const int numRegistor	= 20;
 	const int numBlock		= 5*2;//recognition.h¤]­n§ï
-	int ini_size			= 80;    	   
-	int ini_pcaDimension	= 5;  
+	int ini_size			= 140;    	   
+	int ini_pcaDimension	= 11;  
 	int ini_numSelectBlock	= 4;
-	double ini_threshold	= 0.5;
-	double end_threshold	= 0.85; 
+	double ini_threshold	= 0;
+	double end_threshold	= 1; 
 	double gap_threshold	= 0.025; 
 	bool brak_to_reg		= false;
 	string filename				= "..\\Database\\reg_inf.txt";
 	string clock_txt			= "..\\Database\\time.txt";
-	string buf_resultfilename	= "..\\DataBase\\t_record_result.txt";
-	string resultfilename		= "..\\DataBase\\m_record_result.xls";
-	string buf_pro_resultfilename	= "..\\DataBase\\t_pro_record_result.txt";
-	string pro_resultfilename		= "..\\DataBase\\m_pro_record_result.xls";
+	string buf_resultfilename	= "..\\Database\\t_record_result.txt";
+	string resultfilename		= "..\\Database\\m_record_result.xls";
+	string buf_pro_resultfilename	= "..\\Database\\t_pro_record_result.txt";
+	string pro_resultfilename		= "..\\Database\\m_pro_record_result.xls";
 	fstream fp;
 
 	if(!read_setting_file(filename.c_str()  , resultfilename.c_str(),
@@ -111,10 +111,11 @@ void main()
 		fp.close();
 	}
 
-	FaceRecognition face_reg;
-	for(int size = ini_size; size <= 300; size += 20)
+	FaceRecognition face_reg(3);
+
+	for(int size = ini_size; size <= 300; size += 28)
 	{
-		for(int pca = ini_pcaDimension; pca <= 5;pca++)
+		for(int pca = ini_pcaDimension; pca <= 13;pca++)
 		{
 			cout << "size = " << size << endl << "pca = "  << pca  << endl;
 
@@ -161,13 +162,14 @@ void main()
 
 					for(double threshold = ini_threshold,i = 0;threshold < end_threshold + gap_threshold;threshold += gap_threshold,i++)
 					{
-						fp << threshold << "\t" << pre[j][i] << "\t"<< recall[j][i] << "\n";
+						if((threshold <=0.35 && threshold > 0) || (threshold >= 0.8 && threshold < 1)) continue;
+						fp << threshold << "\t" << recall[j][i]  << "\t"<< pre[j][i]<< "\n";
 					}
 					fp.close();
 				}
 			}
-			ini_numSelectBlock	= 2;
-			ini_threshold		= 0.5;
+			ini_numSelectBlock	= 3;
+			ini_threshold		= 0;
 		}
 	}
 	system("pause");

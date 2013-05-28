@@ -7,24 +7,24 @@ void NameinFile_1(int DoType)
 	for(int i = 0;i < 50;i++)Name_Concatenating[i] = 0;
 
 	if(DoType == MAG_TYPE)		
-	sprintf(Name_Concatenating	, "..\\DataBase\\ConcatenatingHisMAG_total.xls");
+	sprintf(Name_Concatenating	, "..\\Database\\ConcatenatingHisMAG_total.xls");
 
 	else if(DoType == PHASE_TYPE)		
-	sprintf(Name_Concatenating	, "..\\DataBase\\ConcatenatingHisPHASE_total.xls");
+	sprintf(Name_Concatenating	, "..\\Database\\ConcatenatingHisPHASE_total.xls");
 
 	else if(DoType == Test_MAG_TYPE)		
-	sprintf(Name_Concatenating	, "..\\DataBase\\testConcatenatingHisMAG_total.xls");
+	sprintf(Name_Concatenating	, "..\\Database\\testConcatenatingHisMAG_total.xls");
 
 	else if(DoType == Test_PHASE_TYPE)		
-	sprintf(Name_Concatenating	, "..\\DataBase\\testConcatenatingHisPHASE_total.xls");
+	sprintf(Name_Concatenating	, "..\\Database\\testConcatenatingHisPHASE_total.xls");
 
 	else if(DoType == PCA_TYPE)
-	sprintf(Name_Concatenating	, "..\\DataBase\\testConcatenatingHisPHASE_total.xls");
+	sprintf(Name_Concatenating	, "..\\Database\\testConcatenatingHisPHASE_total.xls");
 
 }
 
-Recognition::Recognition(const char* filename,int projection,int numBlock,int numSample,int numRegister,
-						char* resultFile,double threshold,int FaceInf,bool debug)
+Recognition::Recognition(const char* filename,int projection,int numWidthBlock,int numHeightBlock,int numSample,int numRegister
+						,char* resultFile,double threshold,int FaceInf,bool debug)
 			: RecognitionMethod(resultFile,numRegister,numSample,threshold)
 {   
 	Image_in	=	cvLoadImage(filename,1);
@@ -42,19 +42,24 @@ Recognition::Recognition(const char* filename,int projection,int numBlock,int nu
 	His_div     =		64;
 	m_numOfFeature  =	40 * 4 * 256 / His_div;
 	m_projection  =		projection;
-	m_numOfM      =		numBlock;
+	m_numblock_h  =		numHeightBlock;
+	m_numblock_w  =		numWidthBlock;
+	m_numOfM      =		numWidthBlock * numHeightBlock;
 	m_numSample   =     numSample;
 	m_numRegister =     numRegister;
 	m_debug		  =		debug;
+	m_endM		  =		m_numOfM;
+	m_Histogram	  =		Dim5(2,Dim4(40,Dim3(m_numOfM,Dim2(4,Dim1(m_numOfFeature)))));
+	m_no_black_block		= vector<char>(m_numOfM);
+	m_Test_ProjectionSpace  = vector<vector<double>>(2*m_numOfM*m_numSample,m_projection);
 
-	m_Test_ProjectionSpace     = vector<vector<double>>(2*m_numOfM*m_numSample,m_projection);
-	
-	for(int i = 0;i < TOTALM;i++) m_no_black_block[i] = true;
+	for(int i = 0;i < m_numOfM;i++) m_no_black_block[i] = 't';
 	int buf;
 	int length = strlen(filename);
 	char *filenameOut = new char[length];
 	strcpy(filenameOut,filename);
 	
+	cout << "gabor size = " << Gax << endl;
 	//char trans to int
 	//為了BLOCXSHOW裡，輸出儲存之名子
 	m_nameNum = 0;
@@ -248,18 +253,18 @@ void Recognition::LGXP()
 }	
 //CreateHistogram()
 //scale : number of input image
-// Histogram[2][40][16][4][4]:Save LBP and LGXP Image's features
+// m_Histogram[2][40][16][4][4]:Save LBP and LGXP Image's features
 void Recognition::CreateHistogram(IplImage* Img,int TypeImg,int scale)
 {
 	double Value  = 0;
-	int Range_Y = m_height/BIG_BLOCK_HEIGHT_NUM,
-		Range_X = m_width /BIG_BLOCK_WIDTH_NUM;
+	int Range_Y = m_height/m_numblock_h,
+		Range_X = m_width /m_numblock_w;
 	//int M = BIG_BLOCK_SIZE  ,K = 0;
 	int K = 0;
 	/***						START CalculateHistogram				****/
-	for(int NUM_Y = 0;NUM_Y < BIG_BLOCK_HEIGHT_NUM;NUM_Y++)
+	for(int NUM_Y = 0;NUM_Y < m_numblock_h;NUM_Y++)
 	{
-		for(int NUM_X = 0;NUM_X < BIG_BLOCK_WIDTH_NUM;NUM_X++)
+		for(int NUM_X = 0;NUM_X < m_numblock_w;NUM_X++)
 		{
 			K = 0;
 			//分四小塊
@@ -281,7 +286,7 @@ void Recognition::CreateHistogram(IplImage* Img,int TypeImg,int scale)
 							int bar = Value/His_div;
 							/*if(bar > 4) bar = 4;
 							else if (bar < 0 )bar = 0;*/
-							Histogram[TypeImg][scale][NUM_Y*BIG_BLOCK_WIDTH_NUM + NUM_X][K][bar]++;//
+							m_Histogram[TypeImg][scale][NUM_Y*m_numblock_w + NUM_X][K][bar]++;//
 						}
 					}
 					K++;
@@ -295,7 +300,7 @@ void Recognition::CreateHistogram(IplImage* Img,int TypeImg,int scale)
 //Create Features For Every One and Save All Of Them "In Order" in the Excel to Make Processing Easyier
 void Recognition::ConcatenatingHistogram(int DoType)
 {
-	int NUM_BIG_BLOCK   = TOTALM       ,
+	int NUM_BIG_BLOCK   = m_numOfM       ,
 		NUM_SMALL_BLOCK = SMALL_BLOCK_SIZE * SMALL_BLOCK_SIZE   ,
 		NUM_BIN         = 256 / His_div							; 
 
@@ -315,7 +320,7 @@ void Recognition::ConcatenatingHistogram(int DoType)
 				{
 					for(int Bin = 0;Bin < NUM_BIN;Bin++)//4 Bins
 					{
-						fprintf(fptr,"%d\t",Histogram[DoType][Scale][M][K][Bin]);
+						fprintf(fptr,"%d\t",m_Histogram[DoType][Scale][M][K][Bin]);
 					}
 				}
 			}
@@ -505,7 +510,7 @@ void Recognition::TestingProjecction()
 
 	vector<vector<double>> m_Mean = vector<vector<double>>(2*m_numOfM,m_numOfFeature);
 
-	FILE *fm_Mean = fopen("..\\DataBase\\m_Mean.xls","r");
+	FILE *fm_Mean = fopen("..\\Database\\m_Mean.xls","r");
 	for(int i = 0; i < (m_numOfM*2); i++)
 	{
 		for(int j = 0; j < m_numOfFeature; j++)
@@ -519,7 +524,7 @@ void Recognition::TestingProjecction()
 
 	vector<vector<double>>m_EigenSpace = vector<vector<double>> (m_numOfFeature*m_numOfM*2,NumOfProjectionPlanes);
 
-	FILE *fm_EigenSpace = fopen("..\\DataBase\\m_EigenSpace.xls","r");
+	FILE *fm_EigenSpace = fopen("..\\Database\\m_EigenSpace.xls","r");
 	for(int i = 0; i < (m_numOfFeature*m_numOfM*2); i++)
 	{
 		for(int j = 0; j < NumOfProjectionPlanes; j++) 
@@ -556,7 +561,7 @@ void Recognition::TestingProjecction()
 
 	/***								寫出投影結果									***/
 	FILE *fProjectionSpace;
-	fProjectionSpace = fopen("..\\DataBase\\TestProjectionSpace.xls","w");
+	fProjectionSpace = fopen("..\\Database\\TestProjectionSpace.xls","w");
 	for(int i = 0; i < (m_numOfM*2); i++){
 		for(int j = 0; j < NumOfProjectionPlanes; j++) fprintf(fProjectionSpace, "%lf\t", m_Test_ProjectionSpace[i][j]);
 		fprintf(fProjectionSpace, "\n");
@@ -570,7 +575,7 @@ void Recognition::LoadDatabase()
 	/*******							讀取資料庫資料						*******/
 	//printf("Database Loading.....\n");
 	m_Register_ProjectionSpace = vector<vector<double>>(2*m_numOfM*m_numSample*m_numRegister,m_projection);
-	FILE *Register_Projection = fopen("..\\DataBase\\m_ProjectionSpace.xls","r");
+	FILE *Register_Projection = fopen("..\\Database\\m_ProjectionSpace.xls","r");
 											
 	for(int j = 0 ;j < (m_numSample*m_numOfM*2*m_numRegister);j++)
 	{
@@ -587,8 +592,8 @@ void Recognition::ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector
 	char chPanorammic[50];
 	char BlockTest[30],BlockRegister[50];
 
-	int rangeY  = m_height/BIG_BLOCK_HEIGHT_NUM,//每個BIG BLOCK的寬度
-		rangeX  = m_width /BIG_BLOCK_WIDTH_NUM;//每個BIG BLOCK的長度
+	int rangeY  = m_height/m_numblock_h,//每個BIG BLOCK的寬度
+		rangeX  = m_width /m_numblock_w;//每個BIG BLOCK的長度
 	
 	for(int s = 0;s < m_numSample;s++)
 	{	
@@ -597,13 +602,13 @@ void Recognition::ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector
 		cvCvtColor(Image_in,srcCopy,CV_RGB2GRAY );
 		IplImage *panoramic = cvLoadImage(chPanorammic,0);
 		int count_select = 0;
-		for(int m = 0;m < END_M;m++)
+		for(int m = 0;m < m_endM;m++)
 		{
-			if(m_no_black_block[highestM[s][m]])
+			if(m_no_black_block[highestM[s][m]] = 't')
 			{
 				int ingM   = highestM[s][m];	//現在處於得block
-				int ingY = ingM/BIG_BLOCK_WIDTH_NUM;
-				int ingX = ingM%BIG_BLOCK_WIDTH_NUM;
+				int ingY = ingM/m_numblock_w;
+				int ingX = ingM%m_numblock_w;
 				int startX	= ingX*rangeX;
 				int	endX	= rangeX + startX;
 				int	startY	= ingY*rangeY;
@@ -651,14 +656,14 @@ void Recognition::ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector
 vector<double> Recognition::ComputeSimilarity()
 {
 
-	FILE *fdle = fopen("..\\DataBase\\Similarity_result.txt","a");
-	FILE *TOTAL = fopen("..\\DataBase\\Similarity_Total_result.txt","a");
-	FILE *TESTFILE = fopen("..\\DataBase\\Similarity_Block.txt","w");
-	int startM = m_StartM,endM = END_M, totalM = 0,
+	FILE *fdle = fopen("..\\Database\\Similarity_result.txt","a");
+	FILE *TOTAL = fopen("..\\Database\\Similarity_Total_result.txt","a");
+	FILE *TESTFILE = fopen("..\\Database\\Similarity_Block.txt","w");
+	int startM = m_StartM,endM = m_endM, totalM = 0,
 		W = m_SetM;
 	if(m_debug)
 	{
-		startM = 0,endM = END_M,W = 0,m_AddM = 1,m_SetM = 1;
+		startM = 0,endM = m_endM,W = 0,m_AddM = 1,m_SetM = 1;
 	}
 	double Avg = 0.;
 	double *SumRate = new double [m_numRegister];
@@ -742,11 +747,11 @@ vector<double> Recognition::ComputeSimilarity()
 void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 										ResultReg &result,vector<vector<int>> &highestM)
 {
-	if(numSelectBlock <= END_M)
+	if(numSelectBlock <= m_endM)
 	{
-		FILE *Blockprint = fopen("..\\DataBase\\Debug_Similarity_Block.txt","w");
+		FILE *Blockprint = fopen("..\\Database\\Debug_Similarity_Block.txt","w");
 	
-		int startM = 0,endM = END_M, totalM = 0;
+		int startM = 0,endM = m_endM, totalM = 0;
 		double Weight = 0.5;
 		ResultReg Result;
 		vector<vector<double>> personRegRate(m_numSample,endM);
@@ -758,12 +763,14 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 			{
 				double D_X = 0,D_B = 0, S_X = 0, S_B = 0;
 				//fprintf(Blockprint,"Person,Sample = %d,%d\n",i,s);
-
+				for(int m = startM; m < endM; m++)
+				{
+					personRegRate[s][m] = 0;
+				}
 				for(int j = startM; j < endM; j++,totalM++)
 				{
-					if(m_no_black_block[j])
+					if(m_no_black_block[j] == 't')
 					{
-						personRegRate[s][j] = 0;
 						double dot_X = 0, dot_B = 0, D_X1 = 0, D_X2 = 0,  D_B1 = 0, D_B2 = 0;
 
 						for(int k = 0; k < m_projection; k++)
@@ -800,7 +807,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 				}	
 			}
 			//Sort
-			vector<vector<int>>temp_M(m_numSample,TOTALM);
+			vector<vector<int>>temp_M(m_numSample,m_numOfM);
 			for(int s = 0;s < m_numSample; s++)
 			{
 				for(int j = startM;j < endM;j++)
@@ -809,7 +816,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 				}
 				for(int j = startM;j < endM;j++)
 				{		
-					for(int m = j+1;m < END_M;m++)
+					for(int m = j+1;m < m_endM;m++)
 					{
 						if(personRegRate[s][j] < personRegRate[s][m])
 						{
@@ -830,7 +837,7 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 			for(int s = 0;s < m_numSample;s++)
 			{
 				int numGetBlock = 0;
-				for(int block = 0;block < TOTALM;block++)
+				for(int block = 0;block < m_numOfM;block++)
 				{
 					if(personRegRate[s][block] != 0)
 					{
@@ -874,21 +881,19 @@ void Recognition::AutoSimilarityBetween(int numSelectBlock,double threshold,
 	}
 }
 
-void Recognition::DeleteBlackBlock(double percentblock)
+void Recognition::DeleteBlackBlock(const IplImage* no_pohe_warp,double percentblock)
 {
-	int block_width = m_width / BIG_BLOCK_WIDTH_NUM;
-	int block_height = m_height / BIG_BLOCK_HEIGHT_NUM;
+	int block_width = m_width / m_numblock_w;
+	int block_height = m_height / m_numblock_h;
 	int block_total_point = block_width *block_height;
-	int startM = 0,endM = END_M;
-	IplImage *grayImg = cvCreateImage(cvSize(m_width,m_height),8,1);
-    cvCvtColor(Image_in,grayImg,CV_BGR2GRAY);
+	int startM = 0,endM = m_endM;
 
 	for(int m = startM;m < endM;m++)
 	{
-		int block_start_x = (m%BIG_BLOCK_WIDTH_NUM)*block_width;
-		int block_start_y = (m/BIG_BLOCK_WIDTH_NUM)*block_height;
-		int block_end_x   = ((m%BIG_BLOCK_WIDTH_NUM)+1)*block_width;
-		int block_end_y	  = ((m/BIG_BLOCK_WIDTH_NUM)+1)*block_height;
+		int block_start_x = (m%m_numblock_w)*block_width;
+		int block_start_y = (m/m_numblock_w)*block_height;
+		int block_end_x   = ((m%m_numblock_w)+1)*block_width;
+		int block_end_y	  = ((m/m_numblock_w)+1)*block_height;
 		int num_black_point = 0;
 
 		int total = 0;
@@ -897,8 +902,8 @@ void Recognition::DeleteBlackBlock(double percentblock)
 		{
 			for(int i = block_start_x;i < block_end_x;i++)
 			{
-				total += cvGetReal2D(grayImg,j,i);
-				if(cvGetReal2D(grayImg,j,i) == 0)
+				total += cvGetReal2D(no_pohe_warp,j,i);
+				if(cvGetReal2D(no_pohe_warp,j,i) == 0)
 				{
 					num_black_point++;
 				}
@@ -910,25 +915,24 @@ void Recognition::DeleteBlackBlock(double percentblock)
 		int threshold			   = 65;
 		if(percent_black_block > percentblock || avg < threshold)
 		{
-			m_no_black_block[m] = false;
+			m_no_black_block[m] = 'f';
 		}
 		else
 		{
-			m_no_black_block[m] = true;
+			m_no_black_block[m] = 't';
 		}
 	}
-	cvReleaseImage(&grayImg);
 }
 
 void Recognition::RecordFaseTure(ResultReg Result, vector<double>&pre, vector<double>&recall,
 								 int type,double str_th,double end_th,double th_gap,bool debug)
 {
-	string filename =			"..\\DataBase\\t_record_result.txt";
-	string resultfilename =		"..\\DataBase\\m_record_result.xls";
+	string filename =			"..\\Database\\t_record_result.txt";
+	string resultfilename =		"..\\Database\\m_record_result.xls";
 	if(type == 1)
 	{
-		filename =			"..\\DataBase\\t_pro_record_result.txt";
-		resultfilename =	"..\\DataBase\\m_pro_record_result.xls";
+		filename =			"..\\Database\\t_pro_record_result.txt";
+		resultfilename =	"..\\Database\\m_pro_record_result.xls";
 	}
 	string s[3];
 	fstream fr;
@@ -998,9 +1002,7 @@ void Recognition::RecordFaseTure(ResultReg Result, vector<double>&pre, vector<do
 		if((get_result[2 + index] + get_result[1 + index]) != 0)
 		{
 			recall[index/4] = (get_result[2 + index]*1.0/((get_result[2 + index] + get_result[1 + index])*1.0))*100;
-		}
-
-		cout <<"thrd = " << threshold << "\tpre = " << pre[index/4] <<"\t recall = " << recall[index/4] << endl;
+		}		
 
 		if(debug)
 		{
@@ -1020,6 +1022,9 @@ void Recognition::RecordFaseTure(ResultReg Result, vector<double>&pre, vector<do
 		fp << "tp = " << get_result[2 + index]  << "\t\t\n";
 		fp << "tn = " << get_result[3 + index]  << "\t\t\n";
 		fp.close();
+
+		if((threshold <=0.35 && threshold > 0) || (threshold >= 0.75 && threshold < 1)) continue;
+		cout <<"thrd = " << threshold << "\tpre = " << pre[index/4] <<"\t recall = " << recall[index/4] << endl;
 	}
 	cout << "==============================================================================\n";
 }
@@ -1039,13 +1044,13 @@ void Recognition::iniHist()
 	{
 		for(int Scale = 0;Scale < 40; Scale++ )
 		{
-			for(int M = 0; M < TOTALM; M++)
+			for(int M = 0; M < m_numOfM; M++)
 			{
 				for(int K = 0; K < 4; K++)
 				{
 					for(int Bin = 0; Bin < (256 / His_div); Bin++)
 					{
-						Histogram[Type][Scale][M][K][Bin] = 0;
+						m_Histogram[Type][Scale][M][K][Bin] = 0;
 					}
 				}
 			}

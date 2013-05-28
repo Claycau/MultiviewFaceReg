@@ -1,7 +1,7 @@
 #include "FaceRecognition.h"
 #include "ImageName.h"
 
-FaceRecognition::FaceRecognition(bool debug)
+FaceRecognition::FaceRecognition(int recognition_type,bool debug)
 {
 	if(debug)
 	{
@@ -87,13 +87,13 @@ FaceRecognition::FaceRecognition(bool debug)
 		m_TestColorImage = NULL;
 		m_normalizePanoramicFace = NULL;
 
-		FILE *fdle = fopen("..\\DataBase\\record_result.txt","w");
+		FILE *fdle = fopen("..\\Database\\record_result.txt","w");
 		fclose(fdle);
 
 		/*
-		fdle = fopen("..\\DataBase\\method_reulst.txt","w");
+		fdle = fopen("..\\Database\\method_reulst.txt","w");
 		fclose(fdle);
-		FILE *fdle = fopen("..\\DataBase\\Similarity_Total_result.txt","w");
+		FILE *fdle = fopen("..\\Database\\Similarity_Total_result.txt","w");
 		fclose(fdle);
 		*/
 		delete [] buf;
@@ -101,6 +101,7 @@ FaceRecognition::FaceRecognition(bool debug)
 	else
 	{
 		m_debug = false;
+		m_Reg_Type = recognition_type;
 	}
 }
 
@@ -165,7 +166,7 @@ bool FaceRecognition::InitRegister()
 	fclose(fdle);
 	fdle = NULL;
 
-	fdle = fopen("..\\DataBase\\NormalCoord.xls","w");
+	fdle = fopen("..\\Database\\NormalCoord.xls","w");
 	fclose(fdle);
 	fdle = NULL;
 
@@ -242,15 +243,18 @@ void FaceRecognition::ConstructPanoramicFace(bool debug)
 			
 			m_normalizePanoramicFace = Procrustes(m_PanoramicFace,centerCood);
 			
-			if(false)
+			if(m_Reg_Type == N_EHENCE || m_Reg_Type == EAR_EHENCE)
 			{
-				IplImage *enhencePanoramiceFace;
-				enhencePanoramiceFace = Enhence(m_normalizePanoramicFace);
+				int pohe_w = -1;
+				int pohe_h = -1;
+				get_pohe_size(pohe_w ,pohe_h ,m_normalizePanoramicFace);
+				IplImage *enhencePanoramiceFace = Enhence(m_normalizePanoramicFace,pohe_w,pohe_h);
+
 				cvSaveImage(fname.ResizeName.c_str(),enhencePanoramiceFace);
 				cvReleaseImage(&enhencePanoramiceFace);
 			}
 			////cvSaveImage(FileName_Out,m_PanoramicFace);
-			if(true)//not enhence
+			if(m_Reg_Type == N_UNEHENCE || m_Reg_Type == EAR_UNEHENCE)//not enhence
 			{
 				cvSaveImage(fname.ResizeName.c_str(),m_normalizePanoramicFace);
 			}
@@ -260,22 +264,22 @@ void FaceRecognition::ConstructPanoramicFace(bool debug)
 	}
 }
 
-IplImage* FaceRecognition::Enhence(IplImage* src)
+IplImage* FaceRecognition::Enhence(IplImage* src,int w ,int h)
 {
 	Mat	m_dst,m_dst2;
 	Mat	m_src  = Mat(src);
 	Mat m_src2 = m_src.clone();
 	
-	POHE::enhance(m_src2,m_dst,49,49);	// two parameters the block sizes of height and width are allowed
+	POHE::enhance(m_src2,m_dst,h,w);	// two parameters the block sizes of height and width are allowed
 	IplImage* dst = cvCloneImage(&(IplImage)m_dst);
 	return dst;
 }
 
-void FaceRecognition::Enhence(string filename)
+void FaceRecognition::Enhence(string filename,int w, int h)
 {
 	Mat src	=	imread(filename,CV_LOAD_IMAGE_GRAYSCALE);
 	Mat	m_dst;
-	POHE::enhance(src,m_dst,49,49);	// two parameters the block sizes of height and width are allowed
+	POHE::enhance(src,m_dst,h,w);	// two parameters the block sizes of height and width are allowed
 	imwrite(filename,m_dst);
 }
 /*
@@ -285,7 +289,7 @@ void FaceRecognition::ConstructFeature()
 {
 	printf("Generating Feature.....\n");
 
-	m_resultFile  = "..\\DataBase\\result2.txt";
+	m_resultFile  = "..\\Database\\result2.txt";
 	int totalIndex = m_numRegister*3;
 
 	/*clock_t time_used_cpu = clock();*/
@@ -296,8 +300,10 @@ void FaceRecognition::ConstructFeature()
 		{
 			FileNamed fname;
 			fname.NameinFile(sample,person,REGISTER);//讀取位置REGISTER
-
-			Recognition Reg(fname.ResizeName.c_str(),m_pcaDimension,m_numBlock,
+			int numBlock_w = 5;
+			int numBlock_h = 2;
+			if(m_Reg_Type == 2 || m_Reg_Type == 3) numBlock_w = 7;
+			Recognition Reg(fname.ResizeName.c_str(),m_pcaDimension,numBlock_w,numBlock_h,
 							m_numSample,m_numRegister,m_resultFile,
 							0.5,m_FaceInf,false);//NUMBLOCK:16
 			Reg.DatabaseConstrcutFeature();
@@ -338,33 +344,42 @@ void FaceRecognition::StartRecognition(int index,vector<vector<double>>&pre,vect
 		SetWarp();
 		IplImage* normal_test = Procrustes(m_TestImage,centerCoord,testMode);
 
-		save_warp(normal_test,person);
+		IplImage* no_pohe_warp = save_warp(normal_test,person);
 		//cvSaveImage("../Database/normal.jpg",normal_test);
-		cvReleaseImage(&normal_test);
-		NormalizeTestImg(person);
+		//NormalizeTestImg(person);
 
 		ostringstream int_to_string;
 		int_to_string << person;
 		string chRegImg,BMP = ".bmp";;
 		chRegImg = "../Recognition/" + int_to_string.str() + BMP;
-		if(false)
+		if(m_Reg_Type == N_EHENCE || m_Reg_Type == EAR_EHENCE)
 		{
-			Enhence(chRegImg);
+			int pohe_w = -1;
+			int pohe_h = -1;
+			get_pohe_size(pohe_w ,pohe_h ,normal_test);
+			Enhence(chRegImg ,pohe_w ,pohe_h);
 		}
-		Recognition recognition(chRegImg.c_str(),m_pcaDimension,m_numBlock,
+		cvReleaseImage(&normal_test);
+		int numBlock_w = 5;
+		int numBlock_h = 2;
+		if(m_Reg_Type == 2 || m_Reg_Type == 3) numBlock_w = 7;
+		Recognition recognition(chRegImg.c_str(),m_pcaDimension,numBlock_w,numBlock_h,
 								m_numSample,m_numRegister,m_resultFile,m_threshold,m_FaceInf,debug);	
 		recognition.LoadDatabase();
 		recognition.Construct_Test_Date();
-		recognition.DeleteBlackBlock(0.4);
+		recognition.DeleteBlackBlock(no_pohe_warp,0.4);
 
 		ResultReg resultget;
-		vector<vector<int>>highestM(m_numSample,m_numBlock);
+		vector<vector<int>>highestM(m_numSample,numBlock_w * numBlock_h);
 		recognition.AutoSimilarityBetween(m_numSelectBlock,m_threshold,resultget,highestM);
 		recognition.RecordFaseTure(resultget,pre[0],recall[0]);
 		if(IndexPicture % 3 != 1)recognition.RecordFaseTure(resultget,pre[1],recall[1],1);
 
-		/*if(m_debug)*/
-		recognition.ShowBlockImg(m_numSelectBlock,resultget,highestM);
+		if(m_debug)
+		{
+			recognition.ShowBlockImg(m_numSelectBlock,resultget,highestM);
+		}
+		cvReleaseImage(&no_pohe_warp);
 		cvReleaseImage(&m_TestImage);
 		cvReleaseImage(&m_TestColorImage);
 	}
@@ -416,7 +431,7 @@ bool FaceRecognition::InitRecog(int IndexPicture)
 {
 	string chTestFeature , chNameTestReg,
 		   BMP = ".bmp";
-	m_resultFile  = "..\\DataBase\\Similarity_result.txt";//<-傳進recognitionMethod
+	m_resultFile  = "..\\Database\\Similarity_result.txt";//<-傳進recognitionMethod
 
 	ostringstream int_to_string;
 	int_to_string << IndexPicture;
@@ -430,16 +445,16 @@ bool FaceRecognition::InitRecog(int IndexPicture)
 	{
 			//***						覆蓋掉原來的資料						***/
 		fstream fdle;
-		fdle.open("..\\DataBase\\testConcatenatingHisMAG_total.xls",ios::out);
+		fdle.open("..\\Database\\testConcatenatingHisMAG_total.xls",ios::out);
 		fdle.close();
-		fdle.open("..\\DataBase\\testConcatenatingHisPHASE_total.xls",ios::out);
+		fdle.open("..\\Database\\testConcatenatingHisPHASE_total.xls",ios::out);
 		fdle.close();
-		fdle.open("..\\DataBase\\TestProjectionSpace.xls",ios::out);
+		fdle.open("..\\Database\\TestProjectionSpace.xls",ios::out);
 		fdle.close();
 
-		/*fdle.open("..\\DataBase\\Similarity_result.txt",ios::out);
+		/*fdle.open("..\\Database\\Similarity_result.txt",ios::out);
 		fdle.close();
-		fdle.open("..\\DataBase\\Similarity_Total_result.txt",ios::app);
+		fdle.open("..\\Database\\Similarity_Total_result.txt",ios::app);
 		fdle.close();*/
 
 		Panoramic test(m_TestColorImage);
@@ -449,7 +464,7 @@ bool FaceRecognition::InitRecog(int IndexPicture)
 
 		m_TraningCoord = vector<vector<Coordinate>>(m_numRegister*m_numSample,12);
 		
-		FILE *testfile = fopen("..\\DataBase\\NormalCoord.xls","r");//NormalizeCoord.xls
+		FILE *testfile = fopen("..\\Database\\NormalCoord.xls","r");//NormalizeCoord.xls
 		for(int k =0;k < m_numRegister*m_numSample;k++)
 		{
 			for(int j = 0;j < 24;j++)
@@ -466,7 +481,7 @@ bool FaceRecognition::InitRecog(int IndexPicture)
 		}
 		fclose(testfile);
 
-		testfile = fopen("..\\DataBase\\normalCoord_t.xls","w");
+		testfile = fopen("..\\Database\\normalCoord_t.xls","w");
 		fclose(testfile);
 
 		return  true;
@@ -502,7 +517,7 @@ int FaceRecognition::GetFaceInf(Coordinate *coord1,Coordinate *coord2)
 	}
 }
 
-IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int charMode)
+IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int Mode)
 {
 	//Rotation
 	double  m = 0,angle = 0;
@@ -542,8 +557,9 @@ IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int 
 	ROI.y = (normal_rotate_coord[0].y);
 	ROI.width  = w*5;
 	ROI.height = normal_rotate_coord[5].y  - normal_rotate_coord[0].y;
-
-	if(m_FaceInf == PROFILELEFT)
+	
+	if(m_FaceInf == PROFILELEFT || 
+	  (Mode == 0 && (m_Reg_Type == EAR_EHENCE ||  m_Reg_Type == EAR_UNEHENCE)))
 	{
 		ROI.x	  = normal_rotate_coord[1].x - 2*w;
 		ROI.width = w*7;
@@ -568,8 +584,8 @@ IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int 
 	}
 
 	string filename;
-	if(charMode == 0)filename = "..\\DataBase\\NormalCoord.xls";
-	else			 filename = "..\\DataBase\\normalCoord_t.xls";
+	if(Mode == 0)	filename = "..\\Database\\NormalCoord.xls";
+	else			filename = "..\\Database\\normalCoord_t.xls";
 	FILE* Coord = fopen(filename.c_str(),"a");
 	for(int i = 0;i < 12;i++)
 	{
@@ -581,7 +597,7 @@ IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int 
 	return noramlizeImg;
 }
 
-void FaceRecognition::save_warp(IplImage* Img,int person)
+IplImage* FaceRecognition::save_warp(IplImage* Img,int person)
 {
 	bool testMode = false;
 	bool morphine = false;
@@ -778,6 +794,8 @@ void FaceRecognition::save_warp(IplImage* Img,int person)
 	char nameImg[30];
 	sprintf(nameImg,"..\\Recognition\\%d.bmp",person);
 	cvSaveImage(nameImg,dst);
+
+	return dst;
 }
 
 void FaceRecognition::NormalizeTestImg(int IndexPicture)
@@ -860,4 +878,18 @@ void FaceRecognition::NormalizeTestImg(int IndexPicture)
 	cvReleaseImage(&rotate);
 	cvReleaseImage(&New_Image);
 	cvReleaseImage(&dst);
+}
+
+void FaceRecognition::get_pohe_size(int &pohe_w,int &pohe_h,const IplImage* normalize_img)
+{
+	int numblock_w  = 5;
+	if(m_Reg_Type == EAR_EHENCE) numblock_w  = 7;
+
+	int numblock_h  = 2;
+
+	int candidate_w = normalize_img-> width / numblock_w;
+	int candidate_h = normalize_img->height / numblock_h;
+
+	pohe_w = (candidate_w % 2 == 1) ? candidate_w : (candidate_w + 1);
+	pohe_h = (candidate_h % 2 == 1) ? candidate_h : (candidate_h + 1);
 }

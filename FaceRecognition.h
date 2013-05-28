@@ -22,29 +22,32 @@ using namespace std;
 
 #define WIDTHR   2
 #define HEIGHTR  2
+#define N_UNEHENCE		0
+#define N_EHENCE		1
+#define EAR_UNEHENCE	2
+#define EAR_EHENCE		3
 class FaceRecognition
 {
 	public:
-		FaceRecognition(bool debug = false);
+		FaceRecognition(int recognition_type = 0,bool debug = false);
 		void StartRegistration(bool debug = false);
 		void StartRecognition();
 		void StartRecognition(int index,vector<vector<double>>&pre,vector<vector<double>>&recall,bool debug = false);
 		void InitSetting(const char* filename,bool debug = false);
 	private:
 		int GetFaceInf(Coordinate *coord1,Coordinate *coord2);
-		IplImage* Enhence(IplImage* src);
-		void Enhence(string filename);
+		IplImage* Enhence(IplImage* src,int w,int h);
+		void Enhence(string filename,int w,int h);
 		void ConstructPanoramicFace(bool debug = false);
 		void ConstructFeature();
 		void NormalizeTestImg(int IndexPicture);
-		//void PreWarping(int person);
-		void save_warp(IplImage* Img,int person);
+		IplImage* save_warp(IplImage* Img,int person);
 		void PCA();
 		bool InitRecog(int IndexPicture);
 		bool InitRegister();
 		bool SetWarp();
-		//IplImage* NorDatabaseImg(IplImage *panoramic_face,Coordinate *centerCoord);
-		IplImage* Procrustes(IplImage *Img,Coordinate *centerCoord,int charMode = 0);	
+		void get_pohe_size(int &pohe_w,int &pohe_h,const IplImage* normalize_img);
+		IplImage* Procrustes(IplImage *Img,Coordinate *centerCoord,int Mode = 0);	
 	private:
 		vector<vector<Coordinate>> m_TraningCoord;
 		vector<Coordinate> m_testCoord;
@@ -64,6 +67,7 @@ class FaceRecognition
 		int m_numSelectBlock;
 		int m_startIndex;
 		int m_FaceInf;
+		int m_Reg_Type;
 		bool m_debug;
 };
 #endif

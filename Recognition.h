@@ -24,18 +24,19 @@ using namespace cv;
 #define PROFILERIGHT 3
 #endif
 
+typedef  vector<int>  Dim1;
+typedef  vector<Dim1> Dim2;
+typedef  vector<Dim2> Dim3;
+typedef  vector<Dim3> Dim4;
+typedef  vector<Dim4> Dim5;
 
 #define  SMALL_BLOCK_SIZE     2
-#define  BIG_BLOCK_WIDTH_NUM  5//main也要改
-#define  BIG_BLOCK_HEIGHT_NUM 2
 #define  BIG_BLOCK_SIZE       5
-#define  TOTALM               BIG_BLOCK_WIDTH_NUM*BIG_BLOCK_HEIGHT_NUM
 #define  START_M  1
-#define  END_M    TOTALM
 #define  ADDM     BIG_BLOCK_SIZE
 
-#define  Gax				 13
-#define	 Gay				 13
+#define  Gax				 15
+#define	 Gay				 15
 #define  Gradius			 Gay/2	
 /*			DoType			*/
 #define MAG_TYPE			 0
@@ -52,7 +53,7 @@ using namespace cv;
 class Recognition:public RecognitionMethod
 {
 	public:
-			Recognition(const char* filename,int projection,int numBlock,int numSample,int numRegister
+			Recognition(const char* filename,int projection,int numWidthBlock,int numHeightBlock,int numSample,int numRegister
 						,char* resultFile,double threshold,int FaceInf,bool debug = false);
 			~Recognition();
 			
@@ -66,8 +67,8 @@ class Recognition:public RecognitionMethod
 			void PCA(int TypeImg,int Number_Of_Register);
 			void ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector<int>> &highestM);
 			void TestingProjecction();
-			void DeleteBlackBlock(double percentblock);
-			void RecordFaseTure(ResultReg Result,vector<double>&pre,vector<double>&recall,int type = 0,double str_th = 0.5,double end_th = 0.85,double th_gap = 0.025,bool debug = false);
+			void DeleteBlackBlock(const IplImage* no_pohe_warp,double percentblock);
+			void RecordFaseTure(ResultReg Result,vector<double>&pre,vector<double>&recall,int type = 0,double str_th = 0,double end_th = 1,double th_gap = 0.025,bool debug = false);
 			vector<double> ComputeSimilarity();
 			IplImage* GetFeatureImg(int choose);//1.LBP 2.LGXP
 			void iniHist();
@@ -78,33 +79,38 @@ class Recognition:public RecognitionMethod
 			void LBP();
 			void LGXP();		
 	private:
+			Dim5	  m_Histogram;
 			vector<vector<double>>m_Test_ProjectionSpace;
 			vector<vector<double>>m_Register_ProjectionSpace;
 			vector<double>PIE;
 			vector<double>GaborMag;      // 1D array to hold the Gabor Magnitude Image
 			vector<double>GaborPha;      // 1D array to hold the Gabor Phase Image
+			vector <double>m_sumRate;
+			vector<char> m_no_black_block;
 			IplImage* Image_in;
 			IplImage* ImgMag;        // 1D array to output Magnitude of Gabor Image
 			IplImage* ImgPhase;      // 1D array to output Phase of Gabor Image
 			IplImage* ImgLBP;
 			IplImage* ImgLGXP;
-			vector <double>m_sumRate;
+			
 			double    ReGaborfun[Gay][Gax]; 
 			double    ImGaborfun[Gay][Gax];
 			bool	  m_debug;
-			bool      m_no_black_block[TOTALM];
 			int       m_StartM;
 			int       m_AddM;
 			int       m_SetM;
 			int		  m_width;
 			int       m_height;
+			int		  m_endM;
 			int       m_nameNum;
 			int       m_numSample;
 			int       m_numRegister;//總共人數
 			int		  m_projection ;
 			int		  m_numOfM;
-			int		  Histogram[2][40][TOTALM][4][4];
 			int		  m_numOfFeature;
 			int		  His_div;
+			int		  m_numblock_w;
+			int		  m_numblock_h;
+			
 };
 #endif

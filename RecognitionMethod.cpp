@@ -51,7 +51,7 @@ i_person RecognitionMethod::SelectBig(int pcaDim)
 	}
 	fclose(fdle);
 
-	fdle = fopen("..\\DataBase\\method_reulst.txt","a");
+	fdle = fopen("..\\Database\\method_reulst.txt","a");
 	max.similarityRate = 0;
 
 	for(int i = 0;i < m_numRegister;i++)
@@ -103,8 +103,8 @@ i_person RecognitionMethod::SelectBig(int pcaDim)
 	m_Precision = (tp*1.0/((tp+fp)*1.0))*100.;
 	m_Recall = (tp*1.0/(tp+fn)*1.0)*100.;
 
-	sprintf(buf,"..\\DataBase\\method_recall_pca%d.txt",pca);
-	//sprintf(buf,"..\\DataBase\\method_recall_th%f.txt",threshold);
+	sprintf(buf,"..\\Database\\method_recall_pca%d.txt",pca);
+	//sprintf(buf,"..\\Database\\method_recall_th%f.txt",threshold);
 	fdle = fopen(buf,"w");
 	fprintf(fdle,"fp:%d fn:%d tp:%d tn:%d\nPRE : %f\nRecall : %f",fp,fn,tp,tn,m_Precision,m_Recall);
 	fclose(fdle);
