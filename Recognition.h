@@ -68,6 +68,7 @@ class Recognition:public RecognitionMethod
 			void ShowBlockImg(int numSelectBlock,ResultReg Result,vector<vector<int>> &highestM);
 			void TestingProjecction();
 			void DeleteBlackBlock(const IplImage* no_pohe_warp,double percentblock);
+			//type = 1 is for profile face to record the result otherwise is for frontal face
 			void RecordFaseTure(ResultReg Result,vector<double>&pre,vector<double>&recall,int type = 0,double str_th = 0,double end_th = 1,double th_gap = 0.025,bool debug = false);
 			vector<double> ComputeSimilarity();
 			IplImage* GetFeatureImg(int choose);//1.LBP 2.LGXP

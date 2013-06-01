@@ -253,7 +253,7 @@ void FaceRecognition::ConstructPanoramicFace(bool debug)
 				cvSaveImage(fname.ResizeName.c_str(),enhencePanoramiceFace);
 				cvReleaseImage(&enhencePanoramiceFace);
 			}
-			////cvSaveImage(FileName_Out,m_PanoramicFace);
+			//cvSaveImage(fname.FileName_Out.c_str(),m_PanoramicFace);
 			if(m_Reg_Type == N_UNEHENCE || m_Reg_Type == EAR_UNEHENCE)//not enhence
 			{
 				cvSaveImage(fname.ResizeName.c_str(),m_normalizePanoramicFace);
@@ -345,7 +345,8 @@ void FaceRecognition::StartRecognition(int index,vector<vector<double>>&pre,vect
 		IplImage* normal_test = Procrustes(m_TestImage,centerCoord,testMode);
 
 		IplImage* no_pohe_warp = save_warp(normal_test,person);
-		//cvSaveImage("../Database/normal.jpg",normal_test);
+		//cvSaveImage("../Database/normal.bmp",normal_test);
+		//system("pause");
 		//NormalizeTestImg(person);
 
 		ostringstream int_to_string;
@@ -375,7 +376,7 @@ void FaceRecognition::StartRecognition(int index,vector<vector<double>>&pre,vect
 		recognition.RecordFaseTure(resultget,pre[0],recall[0]);
 		if(IndexPicture % 3 != 1)recognition.RecordFaseTure(resultget,pre[1],recall[1],1);
 
-		if(m_debug)
+		if(m_debug||true)
 		{
 			recognition.ShowBlockImg(m_numSelectBlock,resultget,highestM);
 		}
@@ -558,10 +559,14 @@ IplImage* FaceRecognition::Procrustes(IplImage *Img,Coordinate *centerCoord,int 
 	ROI.width  = w*5;
 	ROI.height = normal_rotate_coord[5].y  - normal_rotate_coord[0].y;
 	
-	if(m_FaceInf == PROFILELEFT || 
-	  (Mode == 0 && (m_Reg_Type == EAR_EHENCE ||  m_Reg_Type == EAR_UNEHENCE)))
+	if(Mode == 0 && (m_Reg_Type == EAR_EHENCE ||  m_Reg_Type == EAR_UNEHENCE))
 	{
 		ROI.x	  = normal_rotate_coord[1].x - 2*w;
+		ROI.width = w*7;
+	}
+	if(m_FaceInf == PROFILELEFT )
+	{
+		ROI.x	  = normal_rotate_coord[1].x - 3*w;
 		ROI.width = w*7;
 	}
 	if(m_FaceInf == PROFILERIGHT)
@@ -669,7 +674,7 @@ IplImage* FaceRecognition::save_warp(IplImage* Img,int person)
 	vector<Coordinate>adjust_affRight(4);
 
 	////-------------Do Affine------------------//
-	////若圖為右側臉，則不做，反之。
+
 	
  	Morphining S(3,dst,morphine);
 	bool affine_debug = false;
@@ -719,7 +724,7 @@ IplImage* FaceRecognition::save_warp(IplImage* Img,int person)
 		}
 	}
 	S.DoAffineTrsform(Img,dst,adjust_aff,adjusted_aff,30000000,1,affine_debug);
-
+		////若圖為右側臉，則不做，反之。
 	if(m_FaceInf == FRONATAL || m_FaceInf == PROFILELEFT)
 	{
 		for(int i = 0;i < 3;i++)

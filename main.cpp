@@ -85,9 +85,9 @@ void main()
 	const int numSample		= 5;
 	const int numRegistor	= 20;
 	const int numBlock		= 5*2;//recognition.h¤]­n§ï
-	int ini_size			= 140;    	   
-	int ini_pcaDimension	= 11;  
-	int ini_numSelectBlock	= 4;
+	int ini_size			= 196;    	   
+	int ini_pcaDimension	= 5;  
+	int ini_numSelectBlock	= 2;
 	double ini_threshold	= 0;
 	double end_threshold	= 1; 
 	double gap_threshold	= 0.025; 
@@ -112,10 +112,10 @@ void main()
 	}
 
 	FaceRecognition face_reg(3);
-
-	for(int size = ini_size; size <= 300; size += 28)
+	
+	for(int size = ini_size; size >= 56; size -= 28)
 	{
-		for(int pca = ini_pcaDimension; pca <= 13;pca++)
+		for(int pca = ini_pcaDimension; pca <= 17;pca++)
 		{
 			cout << "size = " << size << endl << "pca = "  << pca  << endl;
 
@@ -138,7 +138,7 @@ void main()
 			fp << "registration" <<"\t" << registration << "\n";
 			fp.close();
 
-			for(int numSelectBlock = ini_numSelectBlock; numSelectBlock <= 4;numSelectBlock++)//10
+			for(int numSelectBlock = ini_numSelectBlock; numSelectBlock <= 10;numSelectBlock++)//10
 			{
 				cout << "numSelectBlock = " << numSelectBlock << endl;
 				record_ini(numRegistor,numSample,numBlock ,size,pca ,ini_threshold,numSelectBlock);
@@ -168,9 +168,10 @@ void main()
 					fp.close();
 				}
 			}
-			ini_numSelectBlock	= 3;
+			ini_numSelectBlock	= 2;
 			ini_threshold		= 0;
 		}
+		ini_pcaDimension = 5;
 	}
 	system("pause");
 }
